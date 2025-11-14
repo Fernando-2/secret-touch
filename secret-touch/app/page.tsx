@@ -2,25 +2,24 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-
 export default function Home() {
   const [index, setIndex] = useState(0);
 
   const services = [
     {
-      title: "Web Development",
-      desc: "Responsive, scalable websites built with modern tech.",
-      img: "https://via.placeholder.com/600x400?text=Web+Development",
+      title: "Auto detailing",
+      desc: "Thoroughly cleaning, restoring, and protecting a vehicle's interior and exterior to a like-new condition",
+      img:"",
     },
     {
-      title: "UI/UX Design",
-      desc: "Crafting intuitive and beautiful user experiences.",
-      img: "https://via.placeholder.com/600x400?text=UI+UX+Design",
+      title: "Carpet cleaning",
+      desc: "Removing dirt, dust, allergens, and stains from carpets",
+      img: "",
     },
     {
-      title: "SEO Optimization",
-      desc: "Boost your visibility and reach more customers online.",
-      img: "https://via.placeholder.com/600x400?text=SEO+Optimization",
+      title: "Driveway and Pavement cleaning",
+      desc: "Removing loose debris, applying a cleaning solution scrubbing the surface with a stiff brush, and thoroughly rinsing it with a pressure washer or hose",
+      img: "",
     },
   ];
 
@@ -32,16 +31,26 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50 text-gray-800">
       {/* Hero Section */}
       <section className="flex flex-col items-center justify-center text-center py-20 bg-gradient-to-b from-blue-600 to-blue-500 text-white">
-        <h1 className="text-5xl font-bold mb-4">Your Company Name</h1>
+        <h1 className="text-5xl font-bold mb-4">Secret Touch</h1>
         <p className="text-lg mb-8 max-w-xl">
-          Delivering top-notch web solutions and creative digital services to help your business grow.
+        
         </p>
-        <Link
-          href="/booking"
-          className="px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg shadow hover:bg-gray-100 transition"
-        >
-          Book a Service
-        </Link>
+        <div className="flex gap-4 mt-6">
+  <Link
+    href="/booking"
+    className="px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg shadow hover:bg-gray-100 transition"
+  >
+    Book a Service
+  </Link>
+
+  <Link
+    href="/about"
+    className="px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg shadow hover:bg-gray-100 transition"
+  >
+    Our Story
+  </Link>
+</div>
+
       </section>
 
       {/* Services Carousel */}
@@ -101,7 +110,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="text-center py-6 bg-blue-600 text-white">
-        <p>&copy; {new Date().getFullYear()} Your Company Name. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} secrettouch.co. All rights reserved.</p>
       </footer>
     </main>
   );
