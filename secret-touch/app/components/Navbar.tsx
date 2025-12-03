@@ -1,79 +1,77 @@
+// app/components/Navbar.tsx
 "use client";
 
-import { JSX, useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { useState } from "react";
 
-export default function Navbar(): JSX.Element {
-  const [open, setOpen] = useState<boolean>(false);
+const links = [
+  { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
+  { href: "/booking", label: "Booking" },
+];
+
+export default function Navbar() {
+  const [open, setOpen] = useState(false);
 
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="text-2xl font-bold text-blue-600">
-          Secret Touch
+    <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+      <nav className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <Link href="/" className="font-semibold text-lg tracking-tight">
+          Secret <span className="text-sky-400">Touch</span>
         </Link>
 
-        {/* Desktop Links */}
-        <div className="hidden md:flex space-x-6">
-          <Link href="/" className="hover:text-blue-600 transition">
-            Home
-          </Link>
-          <Link href="/#services" className="hover:text-blue-600 transition">
-            Services
-          </Link>
-          <Link href="/booking" className="hover:text-blue-600 transition">
-            Booking
-          </Link>
-          <Link href="/about" className="hover:text-blue-600 transition">
-            Our Story
-          </Link>
-        </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden"
-          onClick={() => setOpen((prev) => !prev)}
-          aria-label="Toggle menu"
-        >
-          {open ? <X size={28} /> : <Menu size={28} />}
-        </button>
-      </div>
-
-      {/* Mobile Dropdown */}
-      {open && (
-        <div className="md:hidden bg-white border-t flex flex-col text-center pb-4">
-          <Link
-            href="/"
-            className="py-2 hover:text-blue-600"
-            onClick={() => setOpen(false)}
-          >
-            Home
-          </Link>
-          <Link
-            href="/#services"
-            className="py-2 hover:text-blue-600"
-            onClick={() => setOpen(false)}
-          >
-            Services
-          </Link>
+        {/* Desktop links */}
+        <div className="hidden md:flex gap-6 text-sm">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="hover:text-sky-400 transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
           <Link
             href="/booking"
-            className="py-2 hover:text-blue-600"
-            onClick={() => setOpen(false)}
+            className="px-3 py-1 rounded-md border border-sky-500 text-sm hover:bg-sky-500 hover:text-slate-950 transition-colors"
           >
-            Booking
-          </Link>
-          <Link
-            href="/about"
-            className="py-2 hover:text-blue-600"
-            onClick={() => setOpen(false)}
-          >
-            Our Story
+            Book Now
           </Link>
         </div>
+
+        {/* Mobile menu button */}
+        <button
+          className="md:hidden border border-slate-700 rounded-md px-2 py-1 text-sm"
+          onClick={() => setOpen((o) => !o)}
+        >
+          Menu
+        </button>
+      </nav>
+
+      {/* Mobile menu */}
+      {open && (
+        <div className="md:hidden border-t border-slate-800 bg-slate-950">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2 text-sm">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className="py-1 hover:text-sky-400"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <Link
+              href="/booking"
+              onClick={() => setOpen(false)}
+              className="mt-2 px-3 py-2 rounded-md border border-sky-500 text-center hover:bg-sky-500 hover:text-slate-950 transition-colors"
+            >
+              Book Now
+            </Link>
+          </div>
+        </div>
       )}
-    </nav>
+    </header>
   );
 }
