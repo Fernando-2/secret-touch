@@ -1,438 +1,341 @@
-// app/components/BookingCalendar.tsx
+// app/booking/components/BookingCalendar.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 
-type ServiceType = "interior" | "exterior" | "full";
-
-type BookingRecord = {
+type PublicSlot = {
   id: number;
-  date: string;
-  time: string;
-  name: string;
-  service: ServiceType;
-  vehicle: string;
-  createdAt?: string;
+  date: string; // "YYYY-MM-DD"
+  time: string; // e.g. "8:00 AM"
+  status: "pending" | "confirmed" | "cancelled";
+  isBooked: boolean;
 };
 
-const TIME_SLOTS = ["8:00 AM", "10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
-const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+type CalendarSlot = {
+  date: string;
+  time: string;
+  isBooked: boolean;
+  status?: "pending" | "confirmed" | "cancelled";
+};
 
-function formatDateKey(d: Date) {
-  const year = d.getFullYear();
-  const month = `${d.getMonth() + 1}`.padStart(2, "0");
-  const day = `${d.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
+type BookingCalendarProps = {
+  onSelectSlot?: (slot: { date: string; time: string }) => void;
+};
+
+// TIME SETTINGS
+const HOURS_START = 8; // 8 AM
+const HOURS_END = 18; // 6 PM (exclusive)
+const INTERVAL_MINUTES = 60;
+
+// DATE LIMITS
+const MAX_DAYS_AHEAD = 90; // allow up to 90 days into future
+
+function formatDate(date: Date): string {
+  // Booking.date format: "YYYY-MM-DD"
+  return date.toISOString().slice(0, 10);
 }
 
-export default function BookingCalendar() {
-  const today = useMemo(() => {
-    const now = new Date();
-    return formatDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate()));
-  }, []);
+function formatTime(hour: number, minute: number): string {
+  // MUST MATCH Booking.time in DB
+  const h12 = ((hour + 11) % 12) + 1;
+  const ampm = hour < 12 ? "AM" : "PM";
+  const mm = minute.toString().padStart(2, "0");
+  return `${h12}:${mm} ${ampm}`; // e.g. "8:00 AM"
+}
 
-  const [currentMonth, setCurrentMonth] = useState<Date>(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
 
-  const [date, setDate] = useState<string>(today);
-  const [time, setTime] = useState<string>("");
-
-  const [service, setService] = useState<ServiceType | "">("");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [vehicle, setVehicle] = useState("");
-  const [notes, setNotes] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-
-  const [bookings, setBookings] = useState<BookingRecord[]>([]);
-  const [loadingBookings, setLoadingBookings] = useState(true);
-
-  // Load existing bookings from API on mount
-  useEffect(() => {
-    const loadBookings = async () => {
-      try {
-        const res = await fetch("/api/bookings");
-        if (!res.ok) throw new Error("Failed to fetch bookings");
-        const data = await res.json();
-        setBookings(data.bookings || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoadingBookings(false);
-      }
-    };
-
-    loadBookings();
-  }, []);
-
-  const calendarDays = useMemo(() => {
-    const firstOfMonth = new Date(
-      currentMonth.getFullYear(),
-      currentMonth.getMonth(),
-      1
-    );
-    const startDayOfWeek = firstOfMonth.getDay();
-    const startDate = new Date(firstOfMonth);
-    startDate.setDate(firstOfMonth.getDate() - startDayOfWeek);
-
-    const days: Date[] = [];
-    for (let i = 0; i < 42; i++) {
-      const d = new Date(startDate);
-      d.setDate(startDate.getDate() + i);
-      days.push(d);
-    }
-    return days;
-  }, [currentMonth]);
-
-  const bookingsForSelectedDate = useMemo(
-    () => bookings.filter((b) => b.date === date),
-    [bookings, date]
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
   );
+}
 
-  const bookedTimesForSelectedDate = bookingsForSelectedDate.map((b) => b.time);
+export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) {
+  const [bookedSlots, setBookedSlots] = useState<PublicSlot[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const canSubmit =
-    service && date && time && name && email && vehicle && !submitting;
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const maxDate = useMemo(() => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + MAX_DAYS_AHEAD);
+    return startOfDay(d);
+  }, [today]);
 
-  const goToPrevMonth = () => {
-    setCurrentMonth(
-      (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
-    );
-  };
-
-  const goToNextMonth = () => {
-    setCurrentMonth(
-      (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
-    );
-  };
-
-  const handleDayClick = (d: Date) => {
-    const key = formatDateKey(d);
-    if (key < today) return; // don’t allow past days
-    setDate(key);
-    setTime("");
-    setSubmitted(false);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canSubmit) return;
-
-    if (bookedTimesForSelectedDate.includes(time)) {
-      alert("That time is already booked. Please choose another slot.");
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      const res = await fetch("/api/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          service,
-          date,
-          time,
-          name,
-          email,
-          vehicle,
-          notes,
-        }),
-      });
-
-      if (!res.ok) {
-        console.error(await res.json());
-        alert("There was a problem creating your booking.");
-        return;
-      }
-
-      const data = await res.json();
-      const newBooking: BookingRecord = data.booking;
-
-      // Update state so UI shows new booking without reload
-      setBookings((prev) => [...prev, newBooking]);
-
-      setSubmitted(true);
-
-      // Clear only personal fields
-      setService("");
-      setName("");
-      setEmail("");
-      setVehicle("");
-      setNotes("");
-    } catch (err) {
-      console.error(err);
-      alert("Network error while creating booking.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const monthLabel = currentMonth.toLocaleString("default", {
-    month: "long",
-    year: "numeric",
+  // currentMonth is a Date pointing at the 1st of the visible month
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
   });
+
+  const [selectedDate, setSelectedDate] = useState<Date | null>(today);
+
+  // Fetch booked slots from public API
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/bookings/public", { cache: "no-store" });
+        const data = await res.json();
+        setBookedSlots(data.slots ?? []);
+      } catch (err) {
+        console.error("Failed to load public bookings", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Map bookings by date string for quick lookup
+  const bookedByDate = useMemo(() => {
+    const map = new Map<string, PublicSlot[]>();
+    for (const slot of bookedSlots) {
+      if (!map.has(slot.date)) map.set(slot.date, []);
+      map.get(slot.date)!.push(slot);
+    }
+    return map;
+  }, [bookedSlots]);
+
+  // Build calendar grid for currentMonth
+  const calendarDays = useMemo(() => {
+    const days: {
+      date: Date;
+      label: number;
+      inCurrentMonth: boolean;
+      isToday: boolean;
+      disabled: boolean;
+      hasAnyBooking: boolean;
+    }[] = [];
+
+    const firstOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const firstWeekday = firstOfMonth.getDay(); // 0 = Sun, 6 = Sat
+
+    // Start from the Sunday before (or same day if Sunday)
+    const start = new Date(firstOfMonth);
+    start.setDate(firstOfMonth.getDate() - firstWeekday);
+
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const dStart = startOfDay(d);
+
+      const disabled = dStart < today || dStart > maxDate;
+      const inCurrentMonth = d.getMonth() === currentMonth.getMonth();
+      const dateStr = formatDate(d);
+      const hasAnyBooking = bookedByDate.has(dateStr);
+      const isTodayFlag = isSameDay(dStart, today);
+
+      days.push({
+        date: dStart,
+        label: d.getDate(),
+        inCurrentMonth,
+        isToday: isTodayFlag,
+        disabled,
+        hasAnyBooking,
+      });
+    }
+
+    return days;
+  }, [currentMonth, today, maxDate, bookedByDate]);
+
+  // Time slots for selectedDate
+  const slotsForSelectedDay: CalendarSlot[] = useMemo(() => {
+    if (!selectedDate) return [];
+
+    const dateStr = formatDate(selectedDate);
+    const slots: CalendarSlot[] = [];
+
+    for (let h = HOURS_START; h < HOURS_END; h++) {
+      for (let m = 0; m < 60; m += INTERVAL_MINUTES) {
+        const timeStr = formatTime(h, m);
+
+        const match = bookedSlots.find(
+          (b) => b.date === dateStr && b.time === timeStr && b.isBooked
+        );
+
+        slots.push({
+          date: dateStr,
+          time: timeStr,
+          isBooked: !!match,
+          status: match?.status,
+        });
+      }
+    }
+
+    return slots;
+  }, [bookedSlots, selectedDate]);
+
+  function goToPrevMonth() {
+    const prev = new Date(currentMonth);
+    prev.setMonth(prev.getMonth() - 1);
+    // Don’t allow navigating entirely before today’s month if all days would be disabled
+    if (prev < today && prev.getMonth() !== today.getMonth()) return;
+    setCurrentMonth(prev);
+  }
+
+  function goToNextMonth() {
+    const next = new Date(currentMonth);
+    next.setMonth(next.getMonth() + 1);
+    setCurrentMonth(next);
+  }
+
+  if (loading) {
+    return <p className="text-sm text-slate-300">Loading availability…</p>;
+  }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6 border border-slate-800 rounded-2xl p-4 md:p-6 bg-slate-900/40 text-sm"
-    >
-      {/* Calendar + time slots */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Calendar */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={goToPrevMonth}
-              className="px-2 py-1 text-xs border border-slate-700 rounded-md hover:border-sky-500"
-            >
-              Prev
-            </button>
-            <p className="font-medium">{monthLabel}</p>
-            <button
-              type="button"
-              onClick={goToNextMonth}
-              className="px-2 py-1 text-xs border border-slate-700 rounded-md hover:border-sky-500"
-            >
-              Next
-            </button>
-          </div>
-
-          <div className="grid grid-cols-7 gap-1 text-[11px] text-center text-slate-400">
-            {DAY_LABELS.map((day) => (
-              <div key={day} className="py-1">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7 gap-1 text-[11px]">
-            {calendarDays.map((d) => {
-              const key = formatDateKey(d);
-              const isCurrentMonth =
-                d.getMonth() === currentMonth.getMonth();
-              const isSelected = key === date;
-              const isPast = key < today;
-              const isToday = key === today;
-
-              const hasBooking = bookings.some((b) => b.date === key);
-
-              return (
-                <button
-                  key={key + d.getDate()}
-                  type="button"
-                  onClick={() => handleDayClick(d)}
-                  disabled={isPast}
-                  className={[
-                    "h-8 rounded-md border text-center transition-colors",
-                    isCurrentMonth
-                      ? "border-slate-800"
-                      : "border-slate-900 text-slate-600",
-                    isPast && "opacity-40 cursor-not-allowed",
-                    isSelected &&
-                      "border-sky-500 bg-sky-500 text-slate-950",
-                    !isSelected &&
-                      !isPast &&
-                      "hover:border-sky-500",
-                    isToday && !isSelected && "border-slate-600",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  <span>{d.getDate()}</span>
-                  {hasBooking && (
-                    <span className="block text-[9px] text-sky-400">
-                      booked
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <p className="text-xs text-slate-400">
-            Selected date:{" "}
-            <span className="text-slate-100 font-medium">{date}</span>
-          </p>
-          {loadingBookings && (
-            <p className="text-[11px] text-slate-500">Loading bookings…</p>
-          )}
-        </div>
-
-        {/* Time slots + summary */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-xs text-slate-300">
-              Choose a time for{" "}
-              <span className="font-medium">{date}</span>
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {TIME_SLOTS.map((slot) => {
-                const isBooked = bookedTimesForSelectedDate.includes(slot);
-                const isSelected = time === slot;
-                return (
-                  <button
-                    key={slot}
-                    type="button"
-                    onClick={() => {
-                      if (!isBooked) {
-                        setTime(slot);
-                        setSubmitted(false);
-                      }
-                    }}
-                    disabled={isBooked}
-                    className={[
-                      "px-2 py-2 rounded-md border text-xs text-left transition-colors",
-                      isBooked
-                        ? "border-slate-800 bg-slate-800 text-slate-500 cursor-not-allowed"
-                        : "border-slate-700 hover:border-sky-500",
-                      isSelected &&
-                        !isBooked &&
-                        "border-sky-500 bg-sky-500 text-slate-950",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    <div>{slot}</div>
-                    <div className="text-[10px] text-slate-400">
-                      {isBooked ? "Booked" : "Available"}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="space-y-1 text-xs text-slate-300">
-            <p className="font-medium">Appointments for this date</p>
-            {bookingsForSelectedDate.length === 0 ? (
-              <p className="text-slate-400">
-                No appointments yet for this day.
-              </p>
-            ) : (
-              <ul className="space-y-1">
-                {bookingsForSelectedDate.map((b) => (
-                  <li key={b.id} className="text-slate-300">
-                    <span className="font-medium">{b.time}</span>{" "}
-                    — {b.name} ({b.vehicle})
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Booking details form */}
-      <div className="border-t border-slate-800 pt-4 space-y-4">
-        <div className="grid md:grid-cols-2 gap-4">
-          {/* Service */}
-          <div className="space-y-1">
-            <label className="block text-xs text-slate-300">
-              Service type <span className="text-red-400">*</span>
-            </label>
-            <select
-              value={service}
-              onChange={(e) =>
-                setService(e.target.value as ServiceType | "")
-              }
-              required
-              className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm outline-none focus:border-sky-500"
-            >
-              <option value="">Select a service</option>
-              <option value="interior">Interior Detail</option>
-              <option value="exterior">Exterior Detail</option>
-              <option value="full">Full Detail</option>
-            </select>
-          </div>
-
-          {/* Vehicle */}
-          <div className="space-y-1">
-            <label className="block text-xs text-slate-300">
-              Vehicle (year, make, model){" "}
-              <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={vehicle}
-              onChange={(e) => setVehicle(e.target.value)}
-              required
-              placeholder="2020 Honda Civic"
-              className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm outline-none focus:border-sky-500"
-            />
-          </div>
-
-          {/* Name */}
-          <div className="space-y-1">
-            <label className="block text-xs text-slate-300">
-              Your name <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm outline-none focus:border-sky-500"
-            />
-          </div>
-
-          {/* Email */}
-          <div className="space-y-1">
-            <label className="block text-xs text-slate-300">
-              Email address <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm outline-none focus:border-sky-500"
-            />
-          </div>
-        </div>
-
-        {/* Notes */}
-        <div className="space-y-1">
-          <label className="block text-xs text-slate-300">
-            Notes (pet hair, stains, access details, etc.)
-          </label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm outline-none focus:border-sky-500 resize-none"
-          />
-        </div>
-
-        <p className="text-xs text-slate-400">
-          You are booking for{" "}
-          <span className="text-slate-100 font-medium">{date}</span>{" "}
-          at{" "}
-          <span className="text-slate-100 font-medium">
-            {time || "select a time"}
-          </span>
-          .
-        </p>
-
+    <div className="space-y-4">
+      {/* Calendar header */}
+      <div className="flex items-center justify-between">
         <button
-          type="submit"
-          disabled={!canSubmit}
-          className="inline-flex items-center justify-center px-5 py-2.5 rounded-md bg-sky-500 text-slate-950 text-sm font-medium hover:bg-sky-400 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+          type="button"
+          onClick={goToPrevMonth}
+          className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 hover:border-emerald-500 disabled:opacity-40"
+          disabled={
+            // disable going back if entire previous month is before today
+            new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1) <=
+            new Date(today.getFullYear(), today.getMonth(), 1)
+          }
         >
-          {submitting ? "Sending..." : "Submit Booking Request"}
+          ‹ Prev
         </button>
-
-        {submitted && (
-          <p className="text-xs text-emerald-400">
-            Thanks! Your booking request has been saved.
-          </p>
-        )}
+        <div className="text-sm font-semibold">
+          {currentMonth.toLocaleDateString(undefined, {
+            month: "long",
+            year: "numeric",
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={goToNextMonth}
+          className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 hover:border-emerald-500 disabled:opacity-40"
+          disabled={false}
+        >
+          Next ›
+        </button>
       </div>
-    </form>
+
+      {/* Weekday labels */}
+      <div className="grid grid-cols-7 text-center text-xs font-medium text-slate-300">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          <div key={d} className="py-1">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-1 text-xs">
+        {calendarDays.map((d, idx) => {
+          const isSelected =
+            selectedDate && isSameDay(selectedDate, d.date);
+
+          const baseClasses =
+            "flex h-8 items-center justify-center rounded-md border text-xs " +
+            (d.disabled
+              ? "border-slate-800 bg-slate-950 text-slate-600 cursor-not-allowed"
+              : "cursor-pointer border-slate-700 bg-slate-900 text-slate-100 hover:border-emerald-500");
+
+          const selectedClasses = isSelected
+            ? " border-emerald-500 bg-emerald-600 text-slate-900"
+            : "";
+
+          const dimOutsideMonth = !d.inCurrentMonth && !d.disabled;
+
+          return (
+            <button
+              key={idx}
+              type="button"
+              disabled={d.disabled}
+              onClick={() => {
+                if (d.disabled) return;
+                setSelectedDate(d.date);
+              }}
+              className={
+                baseClasses +
+                selectedClasses +
+                (dimOutsideMonth ? " opacity-60" : "")
+              }
+            >
+              <span className="relative">
+                {d.label}
+                {d.isToday && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] text-emerald-400">
+                    ●
+                  </span>
+                )}
+                {d.hasAnyBooking && !d.disabled && (
+                  <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[8px] text-amber-300">
+                    •
+                  </span>
+                )}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Time slots for selected day */}
+      <div className="space-y-2">
+        {selectedDate && (
+          <div className="text-xs text-slate-300">
+            Showing times for{" "}
+            <span className="font-semibold">
+              {selectedDate.toLocaleDateString(undefined, {
+                weekday: "long",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+          </div>
+        )}
+
+        {slotsForSelectedDay.map((slot) => {
+          const clickable = !slot.isBooked && !!onSelectSlot;
+
+          return (
+            <button
+              key={`${slot.date}-${slot.time}`}
+              type="button"
+              disabled={!clickable}
+              onClick={() =>
+                clickable && onSelectSlot?.({ date: slot.date, time: slot.time })
+              }
+              className={
+                "flex w-full items-center justify-between rounded-md border px-4 py-2 text-sm " +
+                (slot.isBooked
+                  ? "cursor-default border-slate-700 bg-slate-900"
+                  : "border-emerald-600 bg-slate-900 hover:border-emerald-400 hover:bg-slate-800 disabled:opacity-60")
+              }
+            >
+              <div className="font-medium">
+                {slot.time}
+                {slot.isBooked && slot.status === "pending" && (
+                  <span className="ml-2 text-xs text-slate-300">
+                    (pending confirmation)
+                  </span>
+                )}
+              </div>
+
+              <span
+                className={
+                  slot.isBooked
+                    ? "rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-semibold text-red-300"
+                    : "rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-semibold text-emerald-300"
+                }
+              >
+                {slot.isBooked ? "Booked" : "Available"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

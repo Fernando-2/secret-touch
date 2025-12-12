@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `booking` ADD COLUMN `confirmedAt` DATETIME(3) NULL,
+    ADD COLUMN `paymentStatus` ENUM('UNPAID', 'PAID', 'REFUNDED') NOT NULL DEFAULT 'UNPAID',
+    ADD COLUMN `priceCents` INTEGER NULL;

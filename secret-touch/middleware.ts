@@ -1,37 +1,39 @@
 // middleware.ts
-import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Any path starting with /television
-  const isTelevisionRoute = pathname.startsWith("/television");
-  const isLoginRoute = pathname === "/television/login";
-
-  // If it's not under /television, do nothing
-  if (!isTelevisionRoute) {
+  // 1) Allow the public bookings API through
+  if (pathname.startsWith("/api/bookings/public")) {
     return NextResponse.next();
   }
 
-  // Always allow the login page to load, even without cookie
-  if (isLoginRoute) {
-    return NextResponse.next();
+  // 2) Only protect the private bookings API (admin-facing)
+  if (pathname.startsWith("/api/bookings")) {
+    const adminSession = req.cookies.get("admin_session")?.value;
+
+    if (adminSession === "true") {
+      // Admin is logged in; allow full bookings API
+      return NextResponse.next();
+    }
+
+    // Not admin: block with 401 JSON (better for API than redirect)
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      {
+        status: 401,
+      }
+    );
   }
 
-  // For all other /television routes, require the cookie
-  const adminSession = req.cookies.get("admin_session")?.value;
-
-  if (adminSession !== "true") {
-    const loginUrl = new URL("/television/login", req.url);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Cookie is valid → allow access
+  // 3) Everything else: do nothing
   return NextResponse.next();
 }
 
-// Only run the middleware on /television routes
 export const config = {
-  matcher: ["/television", "/television/:path*"],
+  matcher: [
+    "/api/bookings/:path*", // we are only running on /api/bookings...
+  ],
 };

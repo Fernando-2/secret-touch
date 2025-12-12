@@ -1,77 +1,63 @@
-// app/components/Navbar.tsx
+// components/Navbar.tsx
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
 
-const links = [
-  { href: "/", label: "Home" },
-  { href: "/about", label: "About" },
-  { href: "/booking", label: "Booking" },
-];
+const navLink =
+  "text-sm font-medium transition hover:text-emerald-500 data-[active=true]:text-emerald-500";
 
-export default function Navbar() {
-  const [open, setOpen] = useState(false);
+export function Navbar() {
+  const pathname = usePathname();
 
   return (
-    <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
-      <nav className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="font-semibold text-lg tracking-tight">
-          Secret <span className="text-sky-400">Touch</span>
+    <header className="border-b bg-slate-900/80 backdrop-blur">
+      <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+        <Link href="/" className="text-lg font-semibold tracking-tight">
+          Secret Touch
         </Link>
 
-        {/* Desktop links */}
-        <div className="hidden md:flex gap-6 text-sm">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="hover:text-sky-400 transition-colors"
-            >
-              {link.label}
-            </Link>
-          ))}
+        <div className="flex items-center gap-4">
+          <Link
+            href="/"
+            className={navLink}
+            data-active={pathname === "/"}
+          >
+            Home
+          </Link>
+
+          <Link
+            href="/about"
+            className={navLink}
+            data-active={pathname.startsWith("/about")}
+          >
+            About
+          </Link>
+
           <Link
             href="/booking"
-            className="px-3 py-1 rounded-md border border-sky-500 text-sm hover:bg-sky-500 hover:text-slate-950 transition-colors"
+            className={navLink}
+            data-active={pathname.startsWith("/booking")}
           >
-            Book Now
+            Book
+          </Link>
+
+          <Link
+            href="/auth/login"
+            className={navLink}
+            data-active={pathname.startsWith("/auth/login")}
+          >
+            Login
+          </Link>
+
+          <Link
+            href="/auth/register"
+            className="rounded-full bg-emerald-500 px-3 py-1 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
+          >
+            Sign up
           </Link>
         </div>
-
-        {/* Mobile menu button */}
-        <button
-          className="md:hidden border border-slate-700 rounded-md px-2 py-1 text-sm"
-          onClick={() => setOpen((o) => !o)}
-        >
-          Menu
-        </button>
       </nav>
-
-      {/* Mobile menu */}
-      {open && (
-        <div className="md:hidden border-t border-slate-800 bg-slate-950">
-          <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2 text-sm">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className="py-1 hover:text-sky-400"
-              >
-                {link.label}
-              </Link>
-            ))}
-            <Link
-              href="/booking"
-              onClick={() => setOpen(false)}
-              className="mt-2 px-3 py-2 rounded-md border border-sky-500 text-center hover:bg-sky-500 hover:text-slate-950 transition-colors"
-            >
-              Book Now
-            </Link>
-          </div>
-        </div>
-      )}
     </header>
   );
 }

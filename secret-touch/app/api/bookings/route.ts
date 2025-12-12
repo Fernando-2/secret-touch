@@ -1,16 +1,14 @@
 // app/api/bookings/route.ts
-import { NextResponse } from "next/server";
-import { addBooking, getBookings, BookingPayload } from "@/lib/bookings";
+import { NextRequest, NextResponse } from "next/server";
+import { addBooking, getBookings, type BookingPayload } from "@/lib/bookings";
 
-// Make sure we run on Node (needed for fs)
 export const runtime = "nodejs";
-// Always serve fresh data
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(_req: NextRequest) {
   try {
     const bookings = await getBookings();
-    return NextResponse.json({ bookings });
+    return NextResponse.json({ bookings }, { status: 200 });
   } catch (err) {
     console.error("GET /api/bookings error:", err);
     return NextResponse.json(
@@ -20,11 +18,10 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as BookingPayload;
 
-    // Very simple validation
     if (
       !body.service ||
       !body.date ||
@@ -39,7 +36,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const booking = await addBooking(body);
+    // if you attached userId via cookie earlier, you can also pull it from req.cookies here
+    const booking = await addBooking({ ...body, userId: null });
 
     return NextResponse.json({ booking }, { status: 201 });
   } catch (err) {

@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client"
+  // generate client into /generated/prisma at project root
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  // url is configured in prisma.config.ts (Prisma 7 style)
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  passwordHash String
+  bookings     Booking[]
+  payments     Payment[]
+  createdAt    DateTime  @default(now())
+}
+
+
+model Booking {
+  id            Int           @id @default(autoincrement())
+  service       String
+  date          String // e.g. "2025-12-20"
+  time          String // e.g. "10:00 AM"
+  name          String
+  email         String
+  vehicle       String
+  notes         String?
+  internalNotes String? // for owner
+  status        BookingStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  confirmedAt   DateTime?
+  user          User?         @relation(fields: [userId], references: [id])
+  userId        Int?
+  paymentStatus PaymentStatus  @default(UNPAID)
+  priceCents    Int?
+  payments      Payment[]
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model Payment {
+  id          Int           @id @default(autoincrement())
+  userId      Int?
+  user        User?         @relation(fields: [userId], references: [id])
+  bookingId   Int?
+  booking     Booking?      @relation(fields: [bookingId], references: [id])
+  amountCents Int
+  method      String
+  status      PaymentStatus @default(PAID)
+  createdAt   DateTime      @default(now())
+}
