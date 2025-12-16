@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 type PublicSlot = {
   id: number;
   date: string; // "YYYY-MM-DD"
-  time: string; // e.g. "8:00 AM"
+  time: string; // "8:00 AM"
   status: "pending" | "confirmed" | "cancelled";
   isBooked: boolean;
 };
@@ -22,25 +22,21 @@ type BookingCalendarProps = {
   onSelectSlot?: (slot: { date: string; time: string }) => void;
 };
 
-// TIME SETTINGS
-const HOURS_START = 8; // 8 AM
-const HOURS_END = 18; // 6 PM (exclusive)
+// TIME & RANGE SETTINGS
+const HOURS_START = 8;
+const HOURS_END = 18;
 const INTERVAL_MINUTES = 60;
-
-// DATE LIMITS
-const MAX_DAYS_AHEAD = 90; // allow up to 90 days into future
+const MAX_DAYS_AHEAD = 90;
 
 function formatDate(date: Date): string {
-  // Booking.date format: "YYYY-MM-DD"
   return date.toISOString().slice(0, 10);
 }
 
 function formatTime(hour: number, minute: number): string {
-  // MUST MATCH Booking.time in DB
   const h12 = ((hour + 11) % 12) + 1;
   const ampm = hour < 12 ? "AM" : "PM";
   const mm = minute.toString().padStart(2, "0");
-  return `${h12}:${mm} ${ampm}`; // e.g. "8:00 AM"
+  return `${h12}:${mm} ${ampm}`;
 }
 
 function startOfDay(d: Date) {
@@ -68,7 +64,6 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
     return startOfDay(d);
   }, [today]);
 
-  // currentMonth is a Date pointing at the 1st of the visible month
   const [currentMonth, setCurrentMonth] = useState<Date>(() => {
     const d = new Date();
     d.setDate(1);
@@ -77,7 +72,6 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(today);
 
-  // Fetch booked slots from public API
   useEffect(() => {
     (async () => {
       try {
@@ -92,7 +86,6 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
     })();
   }, []);
 
-  // Map bookings by date string for quick lookup
   const bookedByDate = useMemo(() => {
     const map = new Map<string, PublicSlot[]>();
     for (const slot of bookedSlots) {
@@ -102,7 +95,6 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
     return map;
   }, [bookedSlots]);
 
-  // Build calendar grid for currentMonth
   const calendarDays = useMemo(() => {
     const days: {
       date: Date;
@@ -113,10 +105,13 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
       hasAnyBooking: boolean;
     }[] = [];
 
-    const firstOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-    const firstWeekday = firstOfMonth.getDay(); // 0 = Sun, 6 = Sat
+    const firstOfMonth = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      1
+    );
+    const firstWeekday = firstOfMonth.getDay();
 
-    // Start from the Sunday before (or same day if Sunday)
     const start = new Date(firstOfMonth);
     start.setDate(firstOfMonth.getDate() - firstWeekday);
 
@@ -144,7 +139,6 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
     return days;
   }, [currentMonth, today, maxDate, bookedByDate]);
 
-  // Time slots for selectedDate
   const slotsForSelectedDay: CalendarSlot[] = useMemo(() => {
     if (!selectedDate) return [];
 
@@ -174,7 +168,6 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
   function goToPrevMonth() {
     const prev = new Date(currentMonth);
     prev.setMonth(prev.getMonth() - 1);
-    // Don’t allow navigating entirely before today’s month if all days would be disabled
     if (prev < today && prev.getMonth() !== today.getMonth()) return;
     setCurrentMonth(prev);
   }
@@ -186,26 +179,29 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
   }
 
   if (loading) {
-    return <p className="text-sm text-slate-300">Loading availability…</p>;
+    return (
+      <p className="text-sm text-slate-300">
+        Loading availability<span className="animate-pulse">…</span>
+      </p>
+    );
   }
 
   return (
     <div className="space-y-4">
       {/* Calendar header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between rounded-xl bg-slate-950/70 px-3 py-2">
         <button
           type="button"
           onClick={goToPrevMonth}
-          className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 hover:border-emerald-500 disabled:opacity-40"
+          className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-medium text-slate-100 hover:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
           disabled={
-            // disable going back if entire previous month is before today
             new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1) <=
             new Date(today.getFullYear(), today.getMonth(), 1)
           }
         >
           ‹ Prev
         </button>
-        <div className="text-sm font-semibold">
+        <div className="text-sm font-semibold text-slate-50">
           {currentMonth.toLocaleDateString(undefined, {
             month: "long",
             year: "numeric",
@@ -214,15 +210,14 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
         <button
           type="button"
           onClick={goToNextMonth}
-          className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 hover:border-emerald-500 disabled:opacity-40"
-          disabled={false}
+          className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-medium text-slate-100 hover:border-emerald-500"
         >
           Next ›
         </button>
       </div>
 
       {/* Weekday labels */}
-      <div className="grid grid-cols-7 text-center text-xs font-medium text-slate-300">
+      <div className="grid grid-cols-7 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-400">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
           <div key={d} className="py-1">
             {d}
@@ -233,20 +228,26 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
       {/* Calendar grid */}
       <div className="grid grid-cols-7 gap-1 text-xs">
         {calendarDays.map((d, idx) => {
-          const isSelected =
-            selectedDate && isSameDay(selectedDate, d.date);
+          const isSelected = selectedDate && isSameDay(selectedDate, d.date);
 
-          const baseClasses =
-            "flex h-8 items-center justify-center rounded-md border text-xs " +
-            (d.disabled
-              ? "border-slate-800 bg-slate-950 text-slate-600 cursor-not-allowed"
-              : "cursor-pointer border-slate-700 bg-slate-900 text-slate-100 hover:border-emerald-500");
+          let base =
+            "flex h-9 items-center justify-center rounded-lg border text-xs transition ";
+          if (d.disabled) {
+            base +=
+              "cursor-not-allowed border-slate-800 bg-slate-950 text-slate-600";
+          } else {
+            base +=
+              "cursor-pointer border-slate-700 bg-slate-900 text-slate-100 hover:border-emerald-500 hover:bg-slate-800";
+          }
 
-          const selectedClasses = isSelected
-            ? " border-emerald-500 bg-emerald-600 text-slate-900"
-            : "";
+          if (!d.inCurrentMonth && !d.disabled) {
+            base += " opacity-60";
+          }
 
-          const dimOutsideMonth = !d.inCurrentMonth && !d.disabled;
+          if (isSelected && !d.disabled) {
+            base +=
+              " border-emerald-500 bg-emerald-500/90 text-slate-900 shadow-md shadow-emerald-500/30";
+          }
 
           return (
             <button
@@ -254,19 +255,14 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
               type="button"
               disabled={d.disabled}
               onClick={() => {
-                if (d.disabled) return;
-                setSelectedDate(d.date);
+                if (!d.disabled) setSelectedDate(d.date);
               }}
-              className={
-                baseClasses +
-                selectedClasses +
-                (dimOutsideMonth ? " opacity-60" : "")
-              }
+              className={base}
             >
               <span className="relative">
                 {d.label}
-                {d.isToday && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] text-emerald-400">
+                {d.isToday && !isSelected && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[9px] text-emerald-400">
                     ●
                   </span>
                 )}
@@ -281,12 +277,12 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
         })}
       </div>
 
-      {/* Time slots for selected day */}
-      <div className="space-y-2">
+      {/* Time slots */}
+      <div className="mt-2 space-y-2">
         {selectedDate && (
-          <div className="text-xs text-slate-300">
+          <div className="text-[11px] text-slate-300">
             Showing times for{" "}
-            <span className="font-semibold">
+            <span className="font-semibold text-slate-100">
               {selectedDate.toLocaleDateString(undefined, {
                 weekday: "long",
                 month: "short",
@@ -298,6 +294,7 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
 
         {slotsForSelectedDay.map((slot) => {
           const clickable = !slot.isBooked && !!onSelectSlot;
+          const booked = slot.isBooked;
 
           return (
             <button
@@ -308,29 +305,22 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
                 clickable && onSelectSlot?.({ date: slot.date, time: slot.time })
               }
               className={
-                "flex w-full items-center justify-between rounded-md border px-4 py-2 text-sm " +
-                (slot.isBooked
-                  ? "cursor-default border-slate-700 bg-slate-900"
-                  : "border-emerald-600 bg-slate-900 hover:border-emerald-400 hover:bg-slate-800 disabled:opacity-60")
+                "flex w-full items-center justify-between rounded-xl border px-4 py-2 text-sm transition " +
+                (booked
+                  ? "cursor-default border-slate-800 bg-slate-950 text-slate-400"
+                  : "border-emerald-600/70 bg-slate-950 hover:border-emerald-400 hover:bg-slate-900 text-slate-100 disabled:cursor-not-allowed disabled:opacity-60")
               }
             >
-              <div className="font-medium">
-                {slot.time}
-                {slot.isBooked && slot.status === "pending" && (
-                  <span className="ml-2 text-xs text-slate-300">
-                    (pending confirmation)
-                  </span>
-                )}
-              </div>
-
+              <div className="font-medium">{slot.time}</div>
               <span
                 className={
-                  slot.isBooked
-                    ? "rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-semibold text-red-300"
-                    : "rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-semibold text-emerald-300"
+                  "rounded-full px-2 py-0.5 text-[11px] font-semibold " +
+                  (booked
+                    ? "bg-red-500/20 text-red-300"
+                    : "bg-emerald-500/20 text-emerald-300")
                 }
               >
-                {slot.isBooked ? "Booked" : "Available"}
+                {booked ? "Booked" : "Available"}
               </span>
             </button>
           );

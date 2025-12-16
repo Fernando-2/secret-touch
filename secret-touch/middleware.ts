@@ -5,35 +5,37 @@ import type { NextRequest } from "next/server";
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1) Allow the public bookings API through
+  // Only care about /api/bookings...
+  if (!pathname.startsWith("/api/bookings")) {
+    return NextResponse.next();
+  }
+
+  // 1) Always allow the public availability endpoint
   if (pathname.startsWith("/api/bookings/public")) {
     return NextResponse.next();
   }
 
-  // 2) Only protect the private bookings API (admin-facing)
-  if (pathname.startsWith("/api/bookings")) {
-    const adminSession = req.cookies.get("admin_session")?.value;
-
-    if (adminSession === "true") {
-      // Admin is logged in; allow full bookings API
-      return NextResponse.next();
-    }
-
-    // Not admin: block with 401 JSON (better for API than redirect)
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      {
-        status: 401,
-      }
-    );
+  // 2) Always allow POST /api/bookings so customers can create bookings
+  if (req.method === "POST") {
+    return NextResponse.next();
   }
 
-  // 3) Everything else: do nothing
-  return NextResponse.next();
+  // 3) Everything else under /api/bookings requires admin_session
+  const adminSession = req.cookies.get("admin_session")?.value;
+
+  if (adminSession === "true") {
+    return NextResponse.next();
+  }
+
+  // Not admin: block (used by admin dashboard only)
+  return NextResponse.json(
+    { error: "Unauthorized" },
+    {
+      status: 401,
+    }
+  );
 }
 
 export const config = {
-  matcher: [
-    "/api/bookings/:path*", // we are only running on /api/bookings...
-  ],
+  matcher: ["/api/bookings/:path*"],
 };
