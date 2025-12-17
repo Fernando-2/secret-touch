@@ -34,6 +34,14 @@ export function Navbar() {
             About
           </Link>
 
+           <Link
+            href="/links"
+            className={navLink}
+            data-active={pathname.startsWith("/links")}
+          >
+            Links
+          </Link>
+
           <Link
             href="/booking"
             className={navLink}
