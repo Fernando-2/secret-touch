@@ -1,6 +1,11 @@
 // app/api/me/bookings/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { bookings } from "../../../../src/db/schema"; // adjust path if needed
+import { desc, eq } from "drizzle-orm";
+
+export const runtime = "nodejs";
+export const revalidate = 0;
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,22 +19,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const bookings = await prisma.booking.findMany({
-      where: { userId },
-      orderBy: { date: "desc" },
-      select: {
-        id: true,
-        service: true,
-        date: true,
-        time: true,
-        status: true,
-        paymentStatus: true,
-        priceCents: true,
-        createdAt: true,
-      },
-    });
+    const rows = await db
+      .select({
+        id: bookings.id,
+        service: bookings.service,
+        date: bookings.date,
+        time: bookings.time,
+        status: bookings.status,
+        paymentStatus: bookings.paymentStatus,
+        priceCents: bookings.priceCents,
+        createdAt: bookings.createdAt,
+      })
+      .from(bookings)
+      .where(eq(bookings.userId, userId))
+      .orderBy(desc(bookings.date), desc(bookings.createdAt));
 
-    return NextResponse.json({ bookings }, { status: 200 });
+    const result = rows.map((b) => ({
+      ...b,
+      createdAt: b.createdAt.toISOString(),
+    }));
+
+    return NextResponse.json({ bookings: result }, { status: 200 });
   } catch (err) {
     console.error("GET /api/me/bookings error:", err);
     return NextResponse.json(
