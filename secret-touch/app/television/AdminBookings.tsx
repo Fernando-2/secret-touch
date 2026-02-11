@@ -1,4 +1,4 @@
-// app/television/admin-bookings.tsx (for example)
+// app/television/AdminBookings.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -35,42 +35,77 @@ export function AdminBookings() {
     load();
   }
 
+  const statusPill = (status?: AdminBooking["status"]) => {
+    const s = status ?? "pending";
+    const base =
+      "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold border";
+    if (s === "confirmed")
+      return (
+        <span className={`${base} border-[#BFFB00]/30 bg-[#BFFB00]/10 text-[#BFFB00]`}>
+          confirmed
+        </span>
+      );
+    if (s === "cancelled")
+      return (
+        <span className={`${base} border-red-500/30 bg-red-500/10 text-red-300`}>
+          cancelled
+        </span>
+      );
+    return (
+      <span className={`${base} border-white/15 bg-white/5 text-white/70`}>
+        pending
+      </span>
+    );
+  };
+
   return (
     <div className="space-y-3">
       {bookings.map((b) => (
         <div
           key={b.id}
-          className="flex items-center justify-between rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+          className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
         >
           <div>
-            <div className="font-medium">
-              {b.name} – {b.service}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="font-semibold text-white">
+                {b.name} <span className="text-white/50">—</span>{" "}
+                <span className="text-white/80">{b.service}</span>
+              </div>
+              {statusPill(b.status)}
             </div>
-            <div className="text-xs text-slate-300">
-              {b.date} @ {b.time} • {b.email}
+
+            <div className="mt-1 text-xs text-white/70">
+              {b.date} @ {b.time} <span className="text-white/40">•</span>{" "}
+              {b.email}
             </div>
-            <div className="mt-1 text-xs">
-              Status:{" "}
-              <span className="font-semibold">{b.status ?? "pending"}</span>
+
+            <div className="mt-1 text-xs text-white/50">
+              Booking ID: <span className="font-mono">{b.id}</span>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <button
               onClick={() => updateStatus(b.id, "confirmed")}
-              className="rounded-md bg-emerald-500 px-2 py-1 text-xs font-semibold text-slate-900 hover:bg-emerald-400"
+              className="rounded-xl bg-[#BFFB00] px-3 py-2 text-xs font-semibold text-black hover:opacity-90 transition"
             >
               Confirm
             </button>
             <button
               onClick={() => updateStatus(b.id, "cancelled")}
-              className="rounded-md bg-red-500 px-2 py-1 text-xs font-semibold text-slate-900 hover:bg-red-400"
+              className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/15 transition"
             >
               Cancel
             </button>
           </div>
         </div>
       ))}
+
+      {bookings.length === 0 && (
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <p className="text-sm text-white/70">No bookings found.</p>
+        </div>
+      )}
     </div>
   );
 }

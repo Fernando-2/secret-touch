@@ -180,7 +180,7 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
 
   if (loading) {
     return (
-      <p className="text-sm text-slate-300">
+      <p className="text-sm text-white/70">
         Loading availability<span className="animate-pulse">…</span>
       </p>
     );
@@ -189,11 +189,11 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
   return (
     <div className="space-y-4">
       {/* Calendar header */}
-      <div className="flex items-center justify-between rounded-xl bg-slate-950/70 px-3 py-2">
+      <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2">
         <button
           type="button"
           onClick={goToPrevMonth}
-          className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-medium text-slate-100 hover:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-xs font-medium text-white hover:border-[#BFFB00] disabled:cursor-not-allowed disabled:opacity-40"
           disabled={
             new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1) <=
             new Date(today.getFullYear(), today.getMonth(), 1)
@@ -201,23 +201,25 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
         >
           ‹ Prev
         </button>
-        <div className="text-sm font-semibold text-slate-50">
+
+        <div className="text-sm font-semibold text-white">
           {currentMonth.toLocaleDateString(undefined, {
             month: "long",
             year: "numeric",
           })}
         </div>
+
         <button
           type="button"
           onClick={goToNextMonth}
-          className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-medium text-slate-100 hover:border-emerald-500"
+          className="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-xs font-medium text-white hover:border-[#BFFB00]"
         >
           Next ›
         </button>
       </div>
 
       {/* Weekday labels */}
-      <div className="grid grid-cols-7 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+      <div className="grid grid-cols-7 text-center text-[11px] font-semibold uppercase tracking-wide text-white/50">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
           <div key={d} className="py-1">
             {d}
@@ -234,10 +236,10 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
             "flex h-9 items-center justify-center rounded-lg border text-xs transition ";
           if (d.disabled) {
             base +=
-              "cursor-not-allowed border-slate-800 bg-slate-950 text-slate-600";
+              "cursor-not-allowed border-white/5 bg-black/40 text-white/30";
           } else {
             base +=
-              "cursor-pointer border-slate-700 bg-slate-900 text-slate-100 hover:border-emerald-500 hover:bg-slate-800";
+              "cursor-pointer border-white/15 bg-white/5 text-white hover:border-[#BFFB00] hover:bg-white/10";
           }
 
           if (!d.inCurrentMonth && !d.disabled) {
@@ -246,7 +248,7 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
 
           if (isSelected && !d.disabled) {
             base +=
-              " border-emerald-500 bg-emerald-500/90 text-slate-900 shadow-md shadow-emerald-500/30";
+              " border-[#BFFB00] bg-[#BFFB00] text-black shadow-md shadow-[#BFFB00]/20";
           }
 
           return (
@@ -261,11 +263,15 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
             >
               <span className="relative">
                 {d.label}
+
+                {/* Today dot */}
                 {d.isToday && !isSelected && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[9px] text-emerald-400">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[9px] text-[#BFFB00]">
                     ●
                   </span>
                 )}
+
+                {/* Has bookings dot */}
                 {d.hasAnyBooking && !d.disabled && (
                   <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[8px] text-amber-300">
                     •
@@ -280,9 +286,9 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
       {/* Time slots */}
       <div className="mt-2 space-y-2">
         {selectedDate && (
-          <div className="text-[11px] text-slate-300">
+          <div className="text-[11px] text-white/70">
             Showing times for{" "}
-            <span className="font-semibold text-slate-100">
+            <span className="font-semibold text-white">
               {selectedDate.toLocaleDateString(undefined, {
                 weekday: "long",
                 month: "short",
@@ -307,8 +313,8 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
               className={
                 "flex w-full items-center justify-between rounded-xl border px-4 py-2 text-sm transition " +
                 (booked
-                  ? "cursor-default border-slate-800 bg-slate-950 text-slate-400"
-                  : "border-emerald-600/70 bg-slate-950 hover:border-emerald-400 hover:bg-slate-900 text-slate-100 disabled:cursor-not-allowed disabled:opacity-60")
+                  ? "cursor-default border-white/5 bg-black/40 text-white/50"
+                  : "border-[#BFFB00]/40 bg-white/5 text-white hover:border-[#BFFB00] hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60")
               }
             >
               <div className="font-medium">{slot.time}</div>
@@ -317,7 +323,7 @@ export default function BookingCalendar({ onSelectSlot }: BookingCalendarProps) 
                   "rounded-full px-2 py-0.5 text-[11px] font-semibold " +
                   (booked
                     ? "bg-red-500/20 text-red-300"
-                    : "bg-emerald-500/20 text-emerald-300")
+                    : "bg-[#BFFB00]/15 text-[#BFFB00]")
                 }
               >
                 {booked ? "Booked" : "Available"}

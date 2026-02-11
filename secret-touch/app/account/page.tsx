@@ -43,109 +43,134 @@ export default async function AccountPage() {
   const upcoming = mine.filter(
     (b) => parseBookingDateTime(b.date, b.time) >= now
   );
-  const past = mine.filter(
-    (b) => parseBookingDateTime(b.date, b.time) < now
-  );
+  const past = mine.filter((b) => parseBookingDateTime(b.date, b.time) < now);
 
   const statusOrDefault = (b: BookingRecord) => b.status || "confirmed";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold">Your bookings</h1>
-        <p className="text-sm text-slate-300">
-          Signed in as <span className="font-mono">{userEmail}</span>.
+    <main className="min-h-screen bg-black text-white">
+      <div className="mx-auto max-w-5xl px-4 py-12 space-y-6">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold tracking-widest text-[#BFFB00]">
+            ACCOUNT
+          </p>
+          <h1 className="text-3xl md:text-4xl font-semibold">Your bookings</h1>
+          <p className="text-sm text-white/70">
+            Signed in as{" "}
+            <span className="font-mono text-white/90">{userEmail}</span>.
+          </p>
+        </div>
+
+        {/* Upcoming */}
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Upcoming</h2>
+
+          {upcoming.length === 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <p className="text-sm text-white/60">
+                You don&apos;t have any upcoming bookings.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {upcoming
+                .sort(
+                  (a, b) =>
+                    parseBookingDateTime(a.date, a.time).getTime() -
+                    parseBookingDateTime(b.date, b.time).getTime()
+                )
+                .map((b) => (
+                  <div
+                    key={b.id}
+                    className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-white">
+                          {b.service.toUpperCase()} detail
+                        </p>
+                        <p className="text-white/70">
+                          {b.date} at {b.time}
+                        </p>
+                        <p className="text-xs text-white/55">
+                          Vehicle: {b.vehicle}
+                        </p>
+                      </div>
+
+                      <span className="text-[11px] px-2 py-0.5 rounded-full border border-[#BFFB00]/30 bg-[#BFFB00]/10 text-[#BFFB00] font-semibold">
+                        {statusOrDefault(b)}
+                      </span>
+                    </div>
+
+                    {b.notes && (
+                      <p className="text-xs text-white/55 mt-2">
+                        <span className="text-white/70 font-semibold">
+                          Notes:
+                        </span>{" "}
+                        {b.notes}
+                      </p>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+        </section>
+
+        {/* Past */}
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Past</h2>
+
+          {past.length === 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <p className="text-sm text-white/60">
+                You don&apos;t have any past bookings yet.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {past
+                .sort(
+                  (a, b) =>
+                    parseBookingDateTime(b.date, b.time).getTime() -
+                    parseBookingDateTime(a.date, a.time).getTime()
+                )
+                .map((b) => (
+                  <div
+                    key={b.id}
+                    className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-white">
+                          {b.service.toUpperCase()} detail
+                        </p>
+                        <p className="text-white/70">
+                          {b.date} at {b.time}
+                        </p>
+                        <p className="text-xs text-white/55">
+                          Vehicle: {b.vehicle}
+                        </p>
+                        <p className="text-xs text-white/45 mt-1">
+                          Status: {statusOrDefault(b)}
+                        </p>
+                      </div>
+
+                      <span className="text-[11px] px-2 py-0.5 rounded-full border border-white/15 bg-black/30 text-white/70">
+                        Past
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </section>
+
+        <p className="text-[11px] text-white/45">
+          Cancellation and reschedule fees (if any) are applied according to the
+          policy shown at booking time. Contact Secret Finish if you need to make
+          changes.
         </p>
       </div>
-
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Upcoming</h2>
-        {upcoming.length === 0 ? (
-          <p className="text-sm text-slate-400">
-            You don&apos;t have any upcoming bookings.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {upcoming
-              .sort(
-                (a, b) =>
-                  parseBookingDateTime(a.date, a.time).getTime() -
-                  parseBookingDateTime(b.date, b.time).getTime()
-              )
-              .map((b) => (
-                <div
-                  key={b.id}
-                  className="border border-slate-800 rounded-xl p-3 bg-slate-900/40 text-sm"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">
-                        {b.service.toUpperCase()} detail
-                      </p>
-                      <p className="text-slate-300">
-                        {b.date} at {b.time}
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        Vehicle: {b.vehicle}
-                      </p>
-                    </div>
-                    <span className="text-[11px] px-2 py-0.5 rounded-full border border-slate-600">
-                      {statusOrDefault(b)}
-                    </span>
-                  </div>
-                  {b.notes && (
-                    <p className="text-xs text-slate-400 mt-1">
-                      Notes: {b.notes}
-                    </p>
-                  )}
-                </div>
-              ))}
-          </div>
-        )}
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Past</h2>
-        {past.length === 0 ? (
-          <p className="text-sm text-slate-400">
-            You don&apos;t have any past bookings yet.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {past
-              .sort(
-                (a, b) =>
-                  parseBookingDateTime(b.date, b.time).getTime() -
-                  parseBookingDateTime(a.date, a.time).getTime()
-              )
-              .map((b) => (
-                <div
-                  key={b.id}
-                  className="border border-slate-800 rounded-xl p-3 bg-slate-900/40 text-sm"
-                >
-                  <p className="font-medium">
-                    {b.service.toUpperCase()} detail
-                  </p>
-                  <p className="text-slate-300">
-                    {b.date} at {b.time}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    Vehicle: {b.vehicle}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Status: {statusOrDefault(b)}
-                  </p>
-                </div>
-              ))}
-          </div>
-        )}
-      </section>
-
-      <p className="text-[11px] text-slate-500">
-        Cancellation and reschedule fees (if any) are applied according to the
-        policy shown at booking time. Contact Secret Finish if you need to make
-        changes.
-      </p>
-    </div>
+    </main>
   );
 }

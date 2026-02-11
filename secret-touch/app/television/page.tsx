@@ -89,134 +89,169 @@ export default function TelevisionAdminPage() {
     }
   }
 
-  // When we become admin, load bookings
   useEffect(() => {
-    if (isAdmin) {
-      loadBookings();
-    }
+    if (isAdmin) loadBookings();
   }, [isAdmin]);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 py-8">
-      <h1 className="mb-4 text-2xl font-semibold">Admin – Secret Touch</h1>
-
-      {!isAdmin && (
-        <form onSubmit={handleLogin} className="space-y-4 max-w-sm">
-          <p className="text-sm text-slate-300">
-            Owners only. Enter the admin password.
+    <main className="min-h-screen bg-black text-white">
+      <div className="mx-auto max-w-6xl px-4 py-12 space-y-6">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold tracking-widest text-[#BFFB00]">
+            ADMIN
           </p>
+          <h1 className="text-3xl md:text-4xl font-semibold">
+            Admin — Secret Finish
+          </h1>
+          <p className="text-sm text-white/70">
+            Manage bookings and confirm/cancel requests.
+          </p>
+        </div>
 
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100"
-            placeholder="Admin password"
-          />
+        {!isAdmin && (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 max-w-md">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <p className="text-sm text-white/70">
+                Owners only. Enter the admin password.
+              </p>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-white/40 focus:border-[#BFFB00] focus:ring-1 focus:ring-[#BFFB00]"
+                placeholder="Admin password"
+              />
 
-          <button
-            type="submit"
-            disabled={loadingLogin}
-            className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-emerald-400 disabled:opacity-60"
-          >
-            {loadingLogin ? "Checking..." : "Login as admin"}
-          </button>
-        </form>
-      )}
+              {error && (
+                <p className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                  {error}
+                </p>
+              )}
 
-      {isAdmin && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold">Bookings (admin view)</h2>
-            <button
-              type="button"
-              onClick={loadBookings}
-              disabled={loadingBookings}
-              className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-100 hover:border-emerald-500 disabled:opacity-60"
-            >
-              {loadingBookings ? "Refreshing…" : "Refresh"}
-            </button>
+              <button
+                type="submit"
+                disabled={loadingLogin}
+                className="rounded-full bg-[#BFFB00] px-5 py-2.5 text-sm font-semibold text-black shadow-md shadow-[#BFFB00]/20 transition hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loadingLogin ? "Checking..." : "Login as admin"}
+              </button>
+            </form>
           </div>
+        )}
 
-          {bookings.length === 0 && !loadingBookings && (
-            <p className="text-sm text-slate-300">No bookings yet.</p>
-          )}
+        {isAdmin && (
+          <section className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Bookings (admin view)</h2>
+                <p className="text-xs text-white/60">
+                  Confirm or cancel bookings. Pending is the default state.
+                </p>
+              </div>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-800">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-900/80 text-xs uppercase text-slate-300">
-                <tr>
-                  <th className="px-3 py-2">Customer</th>
-                  <th className="px-3 py-2">Service</th>
-                  <th className="px-3 py-2">Date/Time</th>
-                  <th className="px-3 py-2">Vehicle</th>
-                  <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800 bg-slate-950/60">
-                {bookings.map((b) => (
-                  <tr key={b.id}>
-                    <td className="px-3 py-2 align-top">
-                      <div className="font-medium">{b.name}</div>
-                      <div className="text-xs text-slate-300">{b.email}</div>
-                    </td>
-                    <td className="px-3 py-2 align-top">
-                      <span className="text-xs uppercase tracking-wide text-slate-200">
-                        {b.service}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 align-top text-xs text-slate-200">
-                      {b.date}
-                      <br />
-                      {b.time}
-                    </td>
-                    <td className="px-3 py-2 align-top text-xs text-slate-200">
-                      {b.vehicle}
-                    </td>
-                    <td className="px-3 py-2 align-top text-xs">
-                      <span
-                        className={
-                          "rounded-full px-2 py-0.5 font-semibold " +
-                          (b.status === "confirmed"
-                            ? "bg-emerald-500/20 text-emerald-300"
-                            : b.status === "cancelled"
-                            ? "bg-red-500/20 text-red-300"
-                            : "bg-amber-500/20 text-amber-300")
-                        }
-                      >
-                        {b.status ?? "pending"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 align-top">
-                      <div className="flex flex-col gap-1">
-                        <button
-                          type="button"
-                          disabled={updatingId === b.id}
-                          onClick={() => updateStatus(b.id, "confirmed")}
-                          className="rounded-md bg-emerald-500 px-2 py-1 text-xs font-semibold text-slate-900 hover:bg-emerald-400 disabled:opacity-60"
-                        >
-                          Confirm
-                        </button>
-                        <button
-                          type="button"
-                          disabled={updatingId === b.id}
-                          onClick={() => updateStatus(b.id, "cancelled")}
-                          className="rounded-md bg-red-500 px-2 py-1 text-xs font-semibold text-slate-900 hover:bg-red-400 disabled:opacity-60"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </td>
+              <button
+                type="button"
+                onClick={loadBookings}
+                disabled={loadingBookings}
+                className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs text-white/80 hover:border-[#BFFB00]/50 hover:bg-white/10 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loadingBookings ? "Refreshing…" : "Refresh"}
+              </button>
+            </div>
+
+            {bookings.length === 0 && !loadingBookings && (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                <p className="text-sm text-white/70">No bookings yet.</p>
+              </div>
+            )}
+
+            <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-black/40 text-xs uppercase text-white/60">
+                  <tr>
+                    <th className="px-3 py-3">Customer</th>
+                    <th className="px-3 py-3">Service</th>
+                    <th className="px-3 py-3">Date/Time</th>
+                    <th className="px-3 py-3">Vehicle</th>
+                    <th className="px-3 py-3">Status</th>
+                    <th className="px-3 py-3">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-    </div>
+                </thead>
+
+                <tbody className="divide-y divide-white/10">
+                  {bookings.map((b) => (
+                    <tr key={b.id} className="hover:bg-white/5 transition">
+                      <td className="px-3 py-3 align-top">
+                        <div className="font-semibold text-white">{b.name}</div>
+                        <div className="text-xs text-white/60">{b.email}</div>
+                      </td>
+
+                      <td className="px-3 py-3 align-top">
+                        <span className="text-xs uppercase tracking-wide text-white/80">
+                          {b.service}
+                        </span>
+                      </td>
+
+                      <td className="px-3 py-3 align-top text-xs text-white/80">
+                        {b.date}
+                        <br />
+                        {b.time}
+                      </td>
+
+                      <td className="px-3 py-3 align-top text-xs text-white/80">
+                        {b.vehicle}
+                        {b.notes ? (
+                          <div className="mt-1 text-[11px] text-white/50">
+                            Notes: {b.notes}
+                          </div>
+                        ) : null}
+                      </td>
+
+                      <td className="px-3 py-3 align-top text-xs">
+                        <span
+                          className={
+                            "rounded-full px-2 py-0.5 font-semibold border " +
+                            (b.status === "confirmed"
+                              ? "border-[#BFFB00]/30 bg-[#BFFB00]/10 text-[#BFFB00]"
+                              : b.status === "cancelled"
+                              ? "border-red-500/30 bg-red-500/10 text-red-300"
+                              : "border-white/15 bg-white/5 text-white/70")
+                          }
+                        >
+                          {b.status ?? "pending"}
+                        </span>
+                      </td>
+
+                      <td className="px-3 py-3 align-top">
+                        <div className="flex flex-col gap-2">
+                          <button
+                            type="button"
+                            disabled={updatingId === b.id}
+                            onClick={() => updateStatus(b.id, "confirmed")}
+                            className="rounded-xl bg-[#BFFB00] px-3 py-2 text-xs font-semibold text-black hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            {updatingId === b.id ? "Updating…" : "Confirm"}
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={updatingId === b.id}
+                            onClick={() => updateStatus(b.id, "cancelled")}
+                            className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/15 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+      </div>
+    </main>
   );
 }
